@@ -6,4 +6,3 @@ define('MYSQL_USER', 'root');
 define('MYSQL_PASSWORD', '');
 
 define('GITHUB_TOKEN', 'your_token_goes_here');
-define('BRANCHES', array('develop', '1.7.7.x', '1.7.6.x'));
