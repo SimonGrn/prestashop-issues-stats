@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/mysql.php';
+$mysql = new PDOWrapper();
 
 $start_date = date("Y-m-d", strtotime( date( "Y-m-d", strtotime( date("Y-m-d") ) ) . "-1 week" ) );
 $end_date = date('Y-m-d');
@@ -8,6 +9,25 @@ $end_date = date('Y-m-d');
 if (isset($_GET['start_date']) && isset($_GET['end_date'])) {
     $start_date = date('Y-m-d', strtotime($_GET['start_date']));
     $end_date = date('Y-m-d', strtotime($_GET['end_date']));
+}
+//get types of labels
+$sql = 'SELECT id, name FROM type ORDER BY name ASC';
+$types = $mysql->query($sql);
+
+//get labels
+$sql = 'SELECT l.id label_id, l.name label_name, l.description label_description, t.id type_id, t.name type_name
+FROM label l 
+INNER JOIN type t ON t.id = l.type_id
+ORDER BY l.name ASC';
+$labels = $mysql->query($sql);
+
+$selected_labels = [];
+
+if (isset($_GET['label']) && $_GET['label'] != '') {
+    $get_labels = $_GET['label'];
+    foreach($get_labels as $k => $v) {
+        $selected_labels[] = $k;
+    }
 }
 
 $colors = [
@@ -49,6 +69,31 @@ $colors = [
             <div class="col">
                 <input type="date" class="form-control" id="end_date" name="end_date" value="<?php echo $end_date; ?>" placeholder="End Date">
             </div>
+        </div>
+        <div class="form-row">
+            <div class="form-check">
+                Badges:
+                <?php
+                    foreach($labels as $label) {
+                        $c = '';
+                        $class_badge = 'badge_light';
+                        if (in_array($label['id'], $selected_labels)) {
+                            $c = 'checked';
+                            $class_badge = 'badge_dark';
+                        }
+                        echo '
+                        <span class="badge badge-pill '.$class_badge.'">
+                            <label for="label_'.$label['id'].'">
+                                <input type="checkbox" id="label_'.$label['id'].'" name="label['.$label['id'].']" '.$c.' />
+                                <span title="'.$label['description'].'">'.$label['name'].'</span>
+                            </label>
+                        </span>
+                        ';
+                    }
+                ?>
+            </div>
+        </div>
+        <div class="form-row">
             <div class="col">
                 <button type="submit" class="btn btn-primary">Submit</button>
             </div>
@@ -58,72 +103,11 @@ $colors = [
     <canvas id="data"></canvas>
 </div>
 <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js" integrity="sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js" integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
 <script>
-  var config = {
-    type: 'line',
-    data: {
-      labels: <?php echo json_encode(array_keys($results)); ?>,
-      datasets:
-        <?php
-        $data = [];
-        foreach ($branches as $branch) {
-            foreach($dates as $date) {
-                $data[$branch][] = isset($results[$date][$branch]) ? $results[$date][$branch] : null;
-            }
-        }
-        $json = [];
-        $ic = 0;
-        foreach($data as $branch => $value) {
-            $json[] = [
-                'label' => $branch,
-                'borderColor' => $colors[$ic%count($colors)],
-                'data' => $value
-            ];
-            $ic++;
-        }
-        echo json_encode($json);
-        ?>
-    },
-    options: {
-      responsive: true,
-      title: {
-        display: true,
-        text: 'Number of PR per branch'
-      },
-      tooltips: {
-        mode: 'index',
-        intersect: false,
-      },
-      hover: {
-        mode: 'nearest',
-        intersect: true
-      },
-      scales: {
-        xAxes: [{
-          display: true,
-          scaleLabel: {
-            display: true,
-            labelString: 'Date'
-          }
-        }],
-        yAxes: [{
-          display: true,
-          scaleLabel: {
-            display: true,
-            labelString: 'Number of PR'
-          },
-          ticks: {
-            beginAtZero: true,
-            stepSize: 1,
-            max:<?php echo $max+2; ?>
-          }
-        }]
-      }
-    }
-  };
-  var ctx = document.getElementById('data').getContext('2d');
-  window.myLine = new Chart(ctx, config);
+
 </script>
 </body>
 </html>
