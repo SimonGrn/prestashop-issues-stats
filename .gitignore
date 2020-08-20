@@ -1,6 +1,5 @@
 /vendor/
 reports/*.md
 .idea
-*.json
 config.php
 
