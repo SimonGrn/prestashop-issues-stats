@@ -23,12 +23,7 @@ if (getenv('END_DATE') !== false) {
 $parameters = [
     "type:issue is:closed label:Bug label:Fixed repo:prestashop/prestashop closed:$start_date..$end_date"
 ];
-//$issues = $paginator->fetchAll($client->api('search'), 'issues', $parameters);
-$issues = json_decode(file_get_contents('res.json'));
-/*$fh = fopen('res.json', 'w');
-$t = json_encode($issues);
-fwrite($fh, $t);
-die();*/
+$issues = $paginator->fetchAll($client->api('search'), 'issues', $parameters);
 
 echo "Found ".count($issues)." issues".PHP_EOL;
 
