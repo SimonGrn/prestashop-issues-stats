@@ -121,7 +121,7 @@ $colors = [
         }
 
         input.type_checkbox {
-            display: none;
+            /*display: none;*/
         }
     </style>
 
@@ -227,11 +227,11 @@ $colors = [
     });
     $(".type_icon_check_all").click(function() {
       const type_id = $(this).data('type');
-      $(".type_"+type_id).prop("checked", true);
+      $(".type_"+type_id).prop("checked", true).trigger('change');
     });
     $(".type_icon_uncheck_all").click(function() {
       const type_id = $(this).data('type');
-      $(".type_"+type_id).prop("checked", false);
+      $(".type_"+type_id).prop("checked", false).trigger('change');
     });
     $('.type_checkbox').change(function() {
       if(this.checked) {
