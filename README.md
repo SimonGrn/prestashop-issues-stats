@@ -26,7 +26,7 @@ Example:
 START_DATE=2019-01-01 END_DATE=2019-12-31 php generate.php
 ```
 
-By default, `START_DATE` is set to `2018-01-01` and `END_DATE` to the current date.
+By default, `START_DATE` is set to `2018-07-01` and `END_DATE` to the current date.
 
 Then use the `index.php` file to browse the data.
 
