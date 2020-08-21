@@ -121,7 +121,7 @@ $colors = [
         }
 
         input.type_checkbox {
-            /*display: none;*/
+            display: none;
         }
     </style>
 
