@@ -66,7 +66,8 @@ if($state != 'all') {
 }
 $sql .= '
 AND l.id IN ('.implode(',', $selected_labels).')
-GROUP BY l.id, l.name;';
+GROUP BY l.id, l.name
+ORDER BY nbr DESC;';
 $data_results = $mysql->query($sql, $data);
 $js_labels = [];
 $js_data = [];
@@ -195,6 +196,13 @@ $colors = [
           echo json_encode($js_data);
           ?>,
         backgroundColor: [
+          'rgb(55, 55, 150)',
+          'rgb(50, 132, 184)',
+          'rgb(41, 158, 72)',
+          'rgb(158, 76, 41)',
+          'rgb(158, 152, 41)',
+          'rgb(41, 158, 49)',
+          'rgb(129, 157, 199)',
           'rgb(55, 55, 150)',
           'rgb(50, 132, 184)',
           'rgb(41, 158, 72)',
