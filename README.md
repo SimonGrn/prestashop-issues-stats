@@ -12,11 +12,16 @@ Create a database using the `schema.sql` file at the root of the project.
 Copy the `config.php.dist` file:
 * change the values inside for your correct MySQL values
 * add your [Github token](https://github.com/settings/tokens/new)
+* add a security token (any passphrase will do)
 
 and rename it `config.php`.
 
 ### How to use
-Use the `generate.php` file to insert data into your database. The GitHub API will only let you get 
+Use the `generate.php` file to insert data into your database. 
+
+:warning: you must declare an environment variable `SECURITY_TOKEN` identical to the one you set up above. 
+
+The GitHub API will only let you get 
 1000 issues max per call so you might want to use the `START_DATE` and `END_DATE` environment variables
 to make sure you don't get too much issues at once.
 
