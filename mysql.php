@@ -3,7 +3,7 @@
 require_once __DIR__ . '/config.php';
 
 class PDOWrapper {
-    private $instance = null;
+    public $instance = null;
 
     public function __construct() {
         $dsn = 'mysql:host='.MYSQL_HOST.';dbname='.MYSQL_DATABASE.';port='.MYSQL_PORT;

@@ -3,21 +3,29 @@
 require_once __DIR__ . '/mysql.php';
 $mysql = new PDOWrapper();
 
-$start_date = date("Y-m-d", strtotime( date( "Y-m-d", strtotime( date("Y-m-d") ) ) . "-1 week" ) );
+$start_date = '2018-07-01';
 $end_date = date('Y-m-d');
 
 if (isset($_GET['start_date']) && isset($_GET['end_date'])) {
     $start_date = date('Y-m-d', strtotime($_GET['start_date']));
     $end_date = date('Y-m-d', strtotime($_GET['end_date']));
 }
+
+//state
+$state = 'all';
+$available_states = ['all', 'open', 'closed'];
+if (isset($_GET['state']) && in_array($_GET['state'], $available_states)) {
+    $state = $_GET['state'];
+}
+
 //get types of labels
 $sql = 'SELECT id, name FROM type ORDER BY name ASC';
 $types = $mysql->query($sql);
 
 //get labels
-$sql = 'SELECT l.id label_id, l.name label_name, l.description label_description, t.id type_id, COALESCE(t.name, "None") type_name
+$sql = 'SELECT l.id label_id, l.name label_name, l.description label_description, t.id type_id, t.name type_name
 FROM label l 
-LEFT JOIN type t ON t.id = l.type_id
+INNER JOIN type t ON t.id = l.type_id
 ORDER BY t.id, l.name ASC';
 $db_labels = $mysql->query($sql);
 
@@ -41,21 +49,29 @@ if (isset($_GET['label']) && $_GET['label'] != '') {
 }
 
 //get the data
-$sql = 'SELECT COUNT(i.id) nbr, l.id, l.name
-FROM issue i
-INNER JOIN issue_label il ON i.id = il.issue_id
-INNER JOIN label l ON il.label_id = l.id
-WHERE i.closed BETWEEN :start_date AND :end_date
-AND l.id IN ('.implode(',', $selected_labels).')
-GROUP BY l.id, l.name;';
 $data = [
     'start_date' => $start_date,
     'end_date' => $end_date,
 ];
+$sql = 'SELECT COUNT(i.id) nbr, l.id, l.name
+FROM issue i
+INNER JOIN issue_label il ON i.id = il.issue_id
+INNER JOIN label l ON il.label_id = l.id
+WHERE i.created BETWEEN :start_date AND :end_date';
+if($state != 'all') {
+    $sql .= '
+    AND i.state = :state
+    ';
+    $data['state'] = $state;
+}
+$sql .= '
+AND l.id IN ('.implode(',', $selected_labels).')
+GROUP BY l.id, l.name;';
 $data_results = $mysql->query($sql, $data);
 $js_labels = [];
 $js_data = [];
 $total = 0;
+
 foreach($data_results as $line) {
     $js_labels[] = $line['name'];
     $js_data[] = $line['nbr'];
@@ -108,6 +124,19 @@ $colors = [
             </div>
             <div class="col">
                 <input type="date" class="form-control" id="end_date" name="end_date" value="<?php echo $end_date; ?>" placeholder="End Date">
+            </div>
+            <div class="col">
+                <select class="form-control" name="state" id="state">
+                    <?php
+                    foreach($available_states as $available_state) {
+                        $s = '';
+                        if ($available_state == $state) {
+                            $s = 'selected';
+                        }
+                        echo '<option value="'.$available_state.'" '.$s.'>'.$available_state.'</option>';
+                    }
+                    ?>
+                </select>
             </div>
         </div>
         <div class="form-row">
