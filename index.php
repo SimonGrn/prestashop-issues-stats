@@ -106,6 +106,23 @@ $colors = [
             padding-top: 10px;
             padding-bottom: 10px;
         }
+
+        #label-toggle {
+            cursor: pointer;
+        }
+
+        .type_icon {
+            cursor: pointer;
+            margin: 0 3px;
+        }
+
+        span.badge, span.badge>* {
+            cursor: pointer;
+        }
+
+        input.type_checkbox {
+            display: none;
+        }
     </style>
 
     <title>PrestaShop Issues Stats</title>
@@ -141,39 +158,56 @@ $colors = [
             </div>
         </div>
         <div class="form-row">
-            <div class="col">
-                <h3>Types of labels</h3>
-            </div>
+            <small id="label-toggle">Toggle labels</small>
         </div>
-        <?php
-            foreach($labels as $type_id => $type_labels) {
-        ?>
-        <div class="form-row">
-            <div class="form-check">
-                <h5><?php echo $type_labels[0]['type_name']; ?></h5>
-                <?php
-                    foreach($type_labels as $label) {
-                        $c = '';
-                        $class_badge = 'badge-light';
-                        if (in_array($label['id'], $selected_labels)) {
-                            $c = 'checked';
-                            $class_badge = 'badge-dark';
-                        }
-                        echo '
-                        <span class="badge '.$class_badge.'">
-                            <label for="label_'.$label['id'].'" style="margin-bottom:0;">
-                                <input type="checkbox" id="label_'.$label['id'].'" name="label['.$label['id'].']" '.$c.' class="type_checkbox"/>
-                                <span title="'.$label['description'].'">'.$label['name'].'</span>
-                            </label>
+        <div class="container-labels" style="display:none;">
+            <div class="form-row">
+                <div class="col">
+                    <h3>Types of labels</h3>
+                </div>
+            </div>
+            <?php
+                foreach($labels as $type_id => $type_labels) {
+            ?>
+            <div class="form-row">
+                <div class="form-check">
+                    <h5><?php echo $type_labels[0]['type_name']; ?>
+                        <span class="type_icon type_icon_check_all" title="Check all labels for this type" data-type="<?php echo $type_id; ?>">
+                            <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-check-circle-fill" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                                <path fill-rule="evenodd" d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+                            </svg>
                         </span>
-                        ';
-                    }
-                ?>
+                        <span class="type_icon type_icon_uncheck_all" title="Uncheck all labels for this type" data-type="<?php echo $type_id; ?>">
+                            <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-check-circle" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                              <path fill-rule="evenodd" d="M8 15A7 7 0 1 0 8 1a7 7 0 0 0 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+                              <path fill-rule="evenodd" d="M10.97 4.97a.75.75 0 0 1 1.071 1.05l-3.992 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.236.236 0 0 1 .02-.022z"/>
+                            </svg>
+                        </span>
+                    </h5>
+                    <?php
+                        foreach($type_labels as $label) {
+                            $c = '';
+                            $class_badge = 'badge-light';
+                            if (in_array($label['id'], $selected_labels)) {
+                                $c = 'checked';
+                                $class_badge = 'badge-dark';
+                            }
+                            echo '
+                            <span class="badge '.$class_badge.'">
+                                <label for="label_'.$label['id'].'" style="margin-bottom:0;">
+                                    <input type="checkbox" id="label_'.$label['id'].'" name="label['.$label['id'].']" '.$c.' class="type_checkbox type_'.$type_id.'"/>
+                                    <span title="'.$label['description'].'">'.$label['name'].'</span>
+                                </label>
+                            </span>
+                            ';
+                        }
+                    ?>
+                </div>
             </div>
+            <?php
+                }
+            ?>
         </div>
-        <?php
-            }
-        ?>
         <div class="form-row">
             <div class="col">
                 <button type="submit" class="btn btn-primary">Submit</button>
@@ -183,11 +217,31 @@ $colors = [
     <hr>
     <canvas id="data"></canvas>
 </div>
-<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/jquery-3.5.1.min.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js" integrity="sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN" crossorigin="anonymous"></script>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js" integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
 <script>
+    $("#label-toggle").click(function() {
+    $(".container-labels").slideToggle('fast');
+    });
+    $(".type_icon_check_all").click(function() {
+      const type_id = $(this).data('type');
+      $(".type_"+type_id).prop("checked", true);
+    });
+    $(".type_icon_uncheck_all").click(function() {
+      const type_id = $(this).data('type');
+      $(".type_"+type_id).prop("checked", false);
+    });
+    $('.type_checkbox').change(function() {
+      if(this.checked) {
+        $(this).parents('span.badge').removeClass('badge-light').addClass('badge-dark');
+      } else {
+        $(this).parents('span.badge').removeClass('badge-dark').addClass('badge-light');
+      }
+    });
+
+
   var config = {
     type: 'pie',
     data: {
