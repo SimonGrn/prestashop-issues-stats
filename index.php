@@ -255,7 +255,6 @@ $colors = [
               type_checked = true;
           }
       }
-      console.log(type_checked);
       if (type_checked) {
           $("#label-"+type_id+"-tab").addClass('type_selected');
       } else {
