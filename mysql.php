@@ -10,7 +10,7 @@ class PDOWrapper {
         try {
             $this->instance = new PDO($dsn, MYSQL_USER, MYSQL_PASSWORD);
         } catch (Exception $e) {
-            die("Unable to connect to database.".PHP_EOL);
+            die("Unable to connect to database : ".$e->getMessage());
         }
     }
     public function query($sql, $data = null) {
