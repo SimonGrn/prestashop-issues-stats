@@ -11,13 +11,6 @@ if (isset($_GET['start_date']) && isset($_GET['end_date'])) {
     $end_date = date('Y-m-d', strtotime($_GET['end_date']));
 }
 
-//state
-$state = 'all';
-$available_states = ['all', 'open', 'closed'];
-if (isset($_GET['state']) && in_array($_GET['state'], $available_states)) {
-    $state = $_GET['state'];
-}
-
 //get types of labels
 $sql = 'SELECT id, name FROM type ORDER BY name ASC';
 $types = $mysql->query($sql);
@@ -53,29 +46,24 @@ $data = [
     'start_date' => $start_date,
     'end_date' => $end_date,
 ];
-$sql = 'SELECT COUNT(i.id) nbr, l.id, l.name
+$sql = 'SELECT COUNT(i.id) nbr, l.id, i.state, l.name
 FROM issue i
 INNER JOIN issue_label il ON i.id = il.issue_id
 INNER JOIN label l ON il.label_id = l.id
-WHERE i.created BETWEEN :start_date AND :end_date';
-if($state != 'all') {
-    $sql .= '
-    AND i.state = :state
-    ';
-    $data['state'] = $state;
-}
-$sql .= '
+WHERE i.created BETWEEN :start_date AND :end_date
 AND l.id IN ('.implode(',', $selected_labels).')
-GROUP BY l.id, l.name
+GROUP BY l.id, i.state, l.name
 ORDER BY nbr DESC;';
 $data_results = $mysql->query($sql, $data);
-$js_labels = [];
+//put the data in the correct fields
+
 $js_data = [];
 $total = 0;
 
 foreach($data_results as $line) {
-    $js_labels[] = $line['name'];
-    $js_data[] = $line['nbr'];
+    $js_data[$line['name']][$line['state']] = [
+            'value' => $line['nbr'],
+    ];
     $total += $line['nbr'];
 }
 
@@ -107,10 +95,6 @@ $colors = [
             padding-bottom: 10px;
         }
 
-        #label-toggle {
-            cursor: pointer;
-        }
-
         .type_icon {
             cursor: pointer;
             margin: 0 3px;
@@ -123,6 +107,15 @@ $colors = [
         input.type_checkbox {
             display: none;
         }
+
+        a.nav-link {
+            font-size: 0.7em;
+        }
+
+        h4 {
+            margin-top: 15px;
+            margin-bottom: 10px;
+        }
     </style>
 
     <title>PrestaShop Issues Stats</title>
@@ -133,7 +126,7 @@ $colors = [
     <form>
         <div class="form-row">
             <div class="col">
-                <h3>Dates</h3>
+                <h4>Issues creation dates interval</h4>
             </div>
         </div>
         <div class="form-row">
@@ -144,34 +137,43 @@ $colors = [
                 <input type="date" class="form-control" id="end_date" name="end_date" value="<?php echo $end_date; ?>" placeholder="End Date">
             </div>
             <div class="col">
-                <select class="form-control" name="state" id="state">
-                    <?php
-                    foreach($available_states as $available_state) {
-                        $s = '';
-                        if ($available_state == $state) {
-                            $s = 'selected';
-                        }
-                        echo '<option value="'.$available_state.'" '.$s.'>'.$available_state.'</option>';
-                    }
-                    ?>
-                </select>
+                <button type="submit" class="btn btn-primary">Display data</button>
             </div>
         </div>
-        <div class="form-row">
-            <small id="label-toggle">Toggle labels</small>
-        </div>
-        <div class="container-labels" style="display:none;">
+        <div class="container-labels">
             <div class="form-row">
                 <div class="col">
-                    <h3>Types of labels</h3>
+                    <h4>Types of labels</h4>
                 </div>
             </div>
+            <div class="form-row">
+                <div class="col">
+                    <ul class="nav nav-tabs" id="navTab" role="tablist">
+                        <?php
+                        $active = 'active';
+                        $aria_active = 'true';
+                            foreach($labels as $type_id => $type_labels) {
+                                echo '
+                                <li class="nav-item" role="presentation">
+                                    <a class="nav-link '.$active.'" id="label-'.$type_id.'-tab" data-toggle="tab" href="#tab_label_'.$type_id.'" role="tab" aria-controls="label_'.$type_id.'" aria-selected="'.$aria_active.'">'.$type_labels[0]['type_name'].'</a>
+                                </li>
+                        ';
+                            $active = '';
+                            $aria_active = 'false';
+                            }
+                        ?>
+                    </ul>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="col">
+                    <div class="tab-content">
             <?php
+            $active = 'active';
                 foreach($labels as $type_id => $type_labels) {
             ?>
-            <div class="form-row">
-                <div class="form-check">
-                    <h5><?php echo $type_labels[0]['type_name']; ?>
+                <div class="tab-pane <?php echo $active; ?>" id="<?php echo 'tab_label_'.$type_id; ?>" role="tabpanel" aria-labelledby="<?php echo $type_id; ?>-tab">
+                    <h6>Select/Unselect all
                         <span class="type_icon type_icon_check_all" title="Check all labels for this type" data-type="<?php echo $type_id; ?>">
                             <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-check-circle-fill" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
                                 <path fill-rule="evenodd" d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
@@ -183,7 +185,7 @@ $colors = [
                               <path fill-rule="evenodd" d="M10.97 4.97a.75.75 0 0 1 1.071 1.05l-3.992 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.236.236 0 0 1 .02-.022z"/>
                             </svg>
                         </span>
-                    </h5>
+                    </h6>
                     <?php
                         foreach($type_labels as $label) {
                             $c = '';
@@ -203,28 +205,24 @@ $colors = [
                         }
                     ?>
                 </div>
-            </div>
-            <?php
+                    <?php
+                    $active = '';
                 }
             ?>
-        </div>
-        <div class="form-row">
-            <div class="col">
-                <button type="submit" class="btn btn-primary">Submit</button>
+                    </div>
+                </div>
             </div>
         </div>
     </form>
     <hr>
-    <canvas id="data"></canvas>
+    <canvas id="bar_data"></canvas>
+    <canvas id="pie_data"></canvas>
 </div>
 <script src="https://code.jquery.com/jquery-3.5.1.min.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js" integrity="sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN" crossorigin="anonymous"></script>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js" integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
 <script>
-    $("#label-toggle").click(function() {
-    $(".container-labels").slideToggle('fast');
-    });
     $(".type_icon_check_all").click(function() {
       const type_id = $(this).data('type');
       $(".type_"+type_id).prop("checked", true).trigger('change');
@@ -241,45 +239,107 @@ $colors = [
       }
     });
 
+    let config_pie = {
+        type: 'pie',
+        data: {
+            datasets: [{
+                data: <?php
+                $pie_data = [];
+                foreach($js_data as $entry) {
+                    $t = 0;
+                    foreach($entry as $open_closed) {
+                        $t += $open_closed['value'];
+                    }
+                    $pie_data[] = $t;
+                }
+                echo json_encode($pie_data);
+                ?>,
+                backgroundColor: [
+                    'rgb(55, 55, 150)',
+                    'rgb(50, 132, 184)',
+                    'rgb(41, 158, 72)',
+                    'rgb(158, 76, 41)',
+                    'rgb(158, 152, 41)',
+                    'rgb(41, 158, 49)',
+                    'rgb(129, 157, 199)',
+                    'rgb(55, 55, 150)',
+                    'rgb(50, 132, 184)',
+                    'rgb(41, 158, 72)',
+                    'rgb(158, 76, 41)',
+                    'rgb(158, 152, 41)',
+                    'rgb(41, 158, 49)',
+                    'rgb(129, 157, 199)'
+                ],
+                label: 'Issue Data'
+            }],
+            labels: <?php echo json_encode(array_keys($js_data)); ?>
+        },
+        options: {
+            title: {
+                display: true,
+                text: 'Number of issues per label'
+            },
+            responsive: true
+        }
+    };
 
-  var config = {
-    type: 'pie',
-    data: {
-      datasets: [{
-        data: <?php
-          echo json_encode($js_data);
-          ?>,
-        backgroundColor: [
-          'rgb(55, 55, 150)',
-          'rgb(50, 132, 184)',
-          'rgb(41, 158, 72)',
-          'rgb(158, 76, 41)',
-          'rgb(158, 152, 41)',
-          'rgb(41, 158, 49)',
-          'rgb(129, 157, 199)',
-          'rgb(55, 55, 150)',
-          'rgb(50, 132, 184)',
-          'rgb(41, 158, 72)',
-          'rgb(158, 76, 41)',
-          'rgb(158, 152, 41)',
-          'rgb(41, 158, 49)',
-          'rgb(129, 157, 199)'
-        ],
-        label: 'Issue Data'
-      }],
-      labels: <?php
-        echo json_encode($js_labels);
-        ?>
-    },
-    options: {
-      responsive: true
-    }
-  };
+    let config_bars = {
+        type: 'bar',
+        data: {
+            datasets: [
+                {
+                data: <?php
+                    $bar_closed_data = [];
+                    $t = 0;
+                    foreach($js_data as $entry) {
+                        $t += $entry['closed']['value'];
+                        $bar_closed_data[] = $t;
+                    }
+                    echo json_encode($bar_closed_data);
+                ?>,
+                backgroundColor: 'rgb(55, 55, 150)'
+                ,
+                label: 'Closed Issues'
+            },{
+                    data: <?php
+                    $bar_open_data = [];
+                    $t = 0;
+                    foreach($js_data as $entry) {
+                        if (isset($entry['open'])) {
+                            $t += $entry['open']['value'];
+                        }
+                        $bar_open_data[] = $t;
+                    }
+                    echo json_encode($bar_open_data);
+                    ?>,
+                    backgroundColor: 'rgb(129, 157, 199)',
+                    label: 'Open Issues'
+                }],
+            labels: <?php echo json_encode(array_keys($js_data)); ?>
+        },
+        options: {
+            title: {
+                display: true,
+                text: 'Issues data per state'
+            },
+            responsive: true,
+            scales: {
+                xAxes: [{
+                    stacked: true,
+                }],
+                yAxes: [{
+                    stacked: true
+                }]
+            }
+        }
+    };
 
-  window.onload = function() {
-    var ctx = document.getElementById('data').getContext('2d');
-    window.myPie = new Chart(ctx, config);
-  };
+    window.onload = function() {
+      var ctx_pie = document.getElementById('pie_data').getContext('2d');
+      window.myPie = new Chart(ctx_pie, config_pie);
+      var ctx_bar = document.getElementById('bar_data').getContext('2d');
+      window.myBar = new Chart(ctx_bar, config_bars);
+    };
 </script>
 </body>
 </html>
