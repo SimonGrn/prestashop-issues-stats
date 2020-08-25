@@ -15,7 +15,7 @@ $client = new Client();
 $client->authenticate(GITHUB_TOKEN, null, Github\Client::AUTH_ACCESS_TOKEN);
 $paginator = new ResultPager($client);
 
-$start_date = '2020-06-28';
+$start_date = '2018-07-01';
 $end_date = date('Y-m-d');
 
 if (getenv('START_DATE') !== false) {
