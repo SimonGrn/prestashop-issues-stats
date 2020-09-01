@@ -67,13 +67,12 @@ while(count($issues_data['data']['repository']['issues']['edges']) > 0) {
             if ($issue_exists['state'] == 'open' && strtolower($issue['node']['state']) == 'closed') {
                 //this issue was closed so we can update it in the database
                 //we remove all its labels and do it again just to be sure
-                echo sprintf("Updating issue %s%s", $issue_exists['id'], PHP_EOL);
                 $sql = 'DELETE FROM issue_label WHERE issue_id = :issue_id;';
                 $data = [
                     'issue_id' => $issue_exists['id'],
                 ];
                 $mysql->query($sql, $data);
-                echo sprintf("Updating issue #%s (%s)...%s", $issue['node']['number'], $issue['node']['title'], PHP_EOL);
+                echo sprintf("Updating issue #%s (%s)%s", $issue['node']['number'], $issue['node']['title'], PHP_EOL);
                 insert_labels($mysql, $issue_exists['id'], $labels);
             } else {
                 continue;
@@ -91,6 +90,7 @@ VALUES (:issue_id, :name, :state, :milestone, :created, :closed);';
             'closed' => ($issue['node']['closedAt'] == null) ? null : date('Y-m-d H:i:s', strtotime($issue['node']['closedAt'])),
         ];
         $mysql->query($sql, $data);
+        echo sprintf("Inserting issue #%s (%s)%s", $issue['node']['number'], $issue['node']['title'], PHP_EOL);
         //get issue id
         $issue_id = $mysql->lastInsertId();
         //insert labels
