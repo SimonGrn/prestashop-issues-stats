@@ -95,7 +95,11 @@ VALUES (:issue_id, :name, :state, :milestone, :created, :closed);';
             'closed' => ($issue['node']['closedAt'] == null) ? null : date('Y-m-d H:i:s', strtotime($issue['node']['closedAt'])),
         ];
         $mysql->query($sql, $data);
-        echo sprintf("Inserting issue #%s (%s)%s", $issue['node']['number'], $issue['node']['title'], PHP_EOL);
+        echo sprintf("Inserting issue #%s (%s) - %s%s",
+            $issue['node']['number'],
+            date('Y-m-d H:i:s', strtotime($issue['node']['createdAt'])),
+            $issue['node']['title'],
+            PHP_EOL);
         //get issue id
         $issue_id = $mysql->lastInsertId();
         //insert labels
