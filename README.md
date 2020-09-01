@@ -21,24 +21,20 @@ Use the `generate.php` file to insert data into your database.
 
 :warning: you must declare an environment variable `SECURITY_TOKEN` identical to the one you set up above. 
 
-The GitHub API will only let you get 
-1000 issues max per call so you might want to use the `START_DATE` and `END_DATE` environment variables
-to make sure you don't get too much issues at once.
-
-Example:
 
 ```
-START_DATE=2019-01-01 END_DATE=2019-12-31 SECURITY_TOKEN=my_token php generate.php
+SECURITY_TOKEN=my_token php generate.php
 ```
 
-By default, `START_DATE` is set to `2018-07-01` and `END_DATE` to the current date.
+The script will gather **all** the issues in the repository and either insert them or update them if they were closed since
+its last passage.
 
 Then use the `index.php` file to browse the data.
 
 ### Update data
 
 If, when inserting new issues, you insert new labels, you may want to link them to the existing `types` by setting up the 
-`type_id` field in the `label` table. It's also possible to create new `types`, the form will 
+`type_id` field in the `label` table (manually !). It's also possible to create new `types`, the form will 
 be updated accordingly.
 
 ### Notes

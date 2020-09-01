@@ -13,46 +13,58 @@ $mysql = new PDOWrapper();
 
 $client = new Client();
 $client->authenticate(GITHUB_TOKEN, null, Github\Client::AUTH_ACCESS_TOKEN);
-$paginator = new ResultPager($client);
 
-$start_date = '2018-07-01';
-$end_date = date('Y-m-d');
+$after = 'Y3Vyc29yOnYyOpHOFQk5vw==';
 
-if (getenv('START_DATE') !== false) {
-    $start_date = date('Y-m-d', strtotime(getenv('START_DATE')));
+$query = '
+{
+  repository(name: "PrestaShop", owner: "PrestaShop") {
+    issues(labels: "Bug", first: 100, after: "%AFTER%") {
+      edges {
+        cursor
+        node {
+          number
+          title
+          createdAt
+          state
+          closed
+          closedAt
+          milestone {
+            title
+          }
+          labels(last: 100) {
+            nodes {
+              name
+              description
+            }
+          }
+        }
+      }
+    }
+  }
 }
-if (getenv('END_DATE') !== false) {
-    $end_date = date('Y-m-d', strtotime(getenv('END_DATE')));
-}
+';
 
-$start_date_ts = strtotime($start_date);
-$end_date_ts = strtotime($end_date);
-$interval = 60*60*24*91; //91 days
-$next_interval = min($end_date_ts, $start_date_ts+$interval);
+$issues_data = $client->api('graphql')->execute(str_replace('%AFTER%', $after, $query));
 
-do {
-    //populate or update the database
-    $start_date_request = date('Y-m-d', $start_date_ts);
-    $end_date_request = date('Y-m-d', $next_interval);
-    echo "FROM $start_date_request to $end_date_request".PHP_EOL;
-
-    $parameters = [
-        "type:issue label:Bug repo:prestashop/prestashop created:$start_date_request..$end_date_request"
-    ];
-    $issues = $paginator->fetchAll($client->api('search'), 'issues', $parameters);
-
-    echo "Found ".count($issues)." issues".PHP_EOL;
+while(count($issues_data['data']['repository']['issues']['edges']) > 0) {
+    $issues = $issues_data['data']['repository']['issues']['edges'];
+    echo sprintf("Found %s issues starting at %s...%s", count($issues), $issues[0]['node']['createdAt'], PHP_EOL);
 
     foreach($issues as $issue) {
-        $labels = $issue['labels'];
+        //putting the cursor to iterate on the next results
+        $after = $issue['cursor'];
+        $labels = [];
+        foreach($issue['node']['labels']['nodes'] as $label) {
+            $labels[] = $label;
+        }
         $sql = 'SELECT id, state FROM `issue` WHERE `issue_id` = :issue_id;';
         $data = [
-            'issue_id' => $issue['number'],
+            'issue_id' => $issue['node']['number'],
         ];
         $issue_exists = $mysql->query($sql, $data);
         if (isset($issue_exists['id'])) {
-//            echo sprintf("Issue %s already in the database, updating/skipping...%s", $issue['number'], PHP_EOL);
-            if ($issue_exists['state'] == 'open' && $issue['state'] == 'closed') {
+            if ($issue_exists['state'] == 'open' && strtolower($issue['node']['state']) == 'closed') {
                 //this issue was closed so we can update it in the database
                 //we remove all its labels and do it again just to be sure
                 echo sprintf("Updating issue %s%s", $issue_exists['id'], PHP_EOL);
@@ -61,22 +73,22 @@ do {
                     'issue_id' => $issue_exists['id'],
                 ];
                 $mysql->query($sql, $data);
+                echo sprintf("Updating issue #%s (%s)...%s", $issue['node']['number'], $issue['node']['title'], PHP_EOL);
                 insert_labels($mysql, $issue_exists['id'], $labels);
             } else {
                 continue;
             }
         }
 
-//        echo sprintf("Inserting issue %s (%s)...%s", $issue['number'], $issue['state'], PHP_EOL);
         $sql = 'INSERT INTO `issue` (`issue_id`, `name`, `state`, `milestone`, `created`, `closed`) 
 VALUES (:issue_id, :name, :state, :milestone, :created, :closed);';
         $data = [
-            'issue_id' => $issue['number'],
-            'name' => $issue['title'],
-            'state' => $issue['state'],
-            'milestone' => isset($issue['milestone']['title']) ? $issue['milestone']['title'] : '',
-            'created' => date('Y-m-d H:i:s', strtotime($issue['created_at'])),
-            'closed' => ($issue['closed_at'] == null) ? null : date('Y-m-d H:i:s', strtotime($issue['closed_at'])),
+            'issue_id' => $issue['node']['number'],
+            'name' => $issue['node']['title'],
+            'state' => strtolower($issue['node']['state']),
+            'milestone' => $issue['node']['milestone'] != null ? $issue['node']['milestone']['title'] : '',
+            'created' => date('Y-m-d H:i:s', strtotime($issue['node']['createdAt'])),
+            'closed' => ($issue['node']['closedAt'] == null) ? null : date('Y-m-d H:i:s', strtotime($issue['node']['closedAt'])),
         ];
         $mysql->query($sql, $data);
         //get issue id
@@ -84,9 +96,9 @@ VALUES (:issue_id, :name, :state, :milestone, :created, :closed);';
         //insert labels
         insert_labels($mysql, $issue_id, $labels);
     }
-    $start_date_ts = $next_interval;
-    $next_interval = $next_interval+$interval;
-} while (strtotime($end_date_request) < $end_date_ts);
+    //relaunch the query with the next batch
+    $issues_data = $client->api('graphql')->execute(str_replace('%AFTER%', $after, $query));
+};
 
 function insert_labels($mysql, $issue_id, $labels) {
     foreach($labels as $label) {
@@ -105,6 +117,7 @@ function insert_labels($mysql, $issue_id, $labels) {
             ];
             $mysql->query($sql, $data);
         } else {
+            echo sprintf("Creating the new label %s (%s)...%s", $label['name'], $label['description'], PHP_EOL);
             //we create the label and add it to the issue
             $sql = 'INSERT INTO `label` (`name`, `description`) VALUES (:name, :description);';
             $data = [
