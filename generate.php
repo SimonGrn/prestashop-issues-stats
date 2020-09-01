@@ -58,14 +58,19 @@ while(count($issues_data['data']['repository']['issues']['edges']) > 0) {
         foreach($issue['node']['labels']['nodes'] as $label) {
             $labels[] = $label;
         }
-        $sql = 'SELECT id, state FROM `issue` WHERE `issue_id` = :issue_id;';
+        $sql = 'SELECT id, issue_id, state FROM `issue` WHERE `issue_id` = :issue_id;';
         $data = [
             'issue_id' => $issue['node']['number'],
         ];
         $issue_exists = $mysql->query($sql, $data);
         if (isset($issue_exists['id'])) {
-            if ($issue_exists['state'] == 'open' && strtolower($issue['node']['state']) == 'closed') {
+            if (strtolower($issue_exists['state']) == 'open' && strtolower($issue['node']['state']) == 'closed') {
                 //this issue was closed so we can update it in the database
+                $sql = 'UPDATE issue SET state="closed" WHERE id = :id;';
+                $data = [
+                    'id' => $issue_exists['id'],
+                ];
+                $mysql->query($sql, $data);
                 //we remove all its labels and do it again just to be sure
                 $sql = 'DELETE FROM issue_label WHERE issue_id = :issue_id;';
                 $data = [
