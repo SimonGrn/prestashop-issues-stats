@@ -28,7 +28,7 @@ to make sure you don't get too much issues at once.
 Example:
 
 ```
-START_DATE=2019-01-01 END_DATE=2019-12-31 php generate.php
+START_DATE=2019-01-01 END_DATE=2019-12-31 SECURITY_TOKEN=my_token php generate.php
 ```
 
 By default, `START_DATE` is set to `2018-07-01` and `END_DATE` to the current date.
