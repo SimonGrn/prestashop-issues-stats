@@ -313,10 +313,8 @@ $colors = [
                 {
                 data: <?php
                     $bar_closed_data = [];
-                    $t = 0;
                     foreach($js_data as $entry) {
-                        $t += $entry['closed']['value'];
-                        $bar_closed_data[] = $t;
+                        $bar_closed_data[] = $entry['closed']['value'];
                     }
                     echo json_encode($bar_closed_data);
                 ?>,
@@ -326,12 +324,8 @@ $colors = [
             },{
                     data: <?php
                     $bar_open_data = [];
-                    $t = 0;
                     foreach($js_data as $entry) {
-                        if (isset($entry['open'])) {
-                            $t += $entry['open']['value'];
-                        }
-                        $bar_open_data[] = $t;
+                        $bar_open_data[] = $entry['open']['value'];
                     }
                     echo json_encode($bar_open_data);
                     ?>,
