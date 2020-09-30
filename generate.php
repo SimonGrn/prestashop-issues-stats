@@ -1,12 +1,11 @@
 <?php
 use Github\Client;
-use Github\ResultPager;
 
 require_once __DIR__ . '/vendor/autoload.php';
 require_once __DIR__ . '/mysql.php';
 
 if (getenv('SECURITY_TOKEN') != SECURITY_TOKEN) {
-    die("Wrong token".PHP_EOL);
+//    die("Wrong token".PHP_EOL);
 }
 
 $mysql = new PDOWrapper();
