@@ -18,8 +18,8 @@ if (getenv('END_DATE')) {
 }
 
 $type = 'creation';
-if (isset($_GET['type']) && in_array($_GET['type'], ['creation', 'close'])) {
-    $type = $_GET['type'];
+if (getenv('TYPE') && in_array(getenv('TYPE'), ['creation', 'close'])) {
+    $type = getenv('TYPE');
 }
 
 $sql_parameters = " AND ". ($type == 'creation' ? " created BETWEEN " : " closed BETWEEN "). "";
